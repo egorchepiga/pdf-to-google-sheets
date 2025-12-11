@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF to Sheet - Live Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .extension-popup {
+      width: 400px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #1a73e8;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .upload-section {
+      border: 2px dashed #cbd5e0;
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      background: #f7fafc;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .upload-section:hover {
+      border-color: #1a73e8;
+      background: #ebf8ff;
+    }
+
+    .upload-section.drag-over {
+      border-color: #1a73e8;
+      background: #ebf8ff;
+      transform: scale(1.02);
+    }
+
+    .upload-icon {
+      font-size: 64px;
+      margin-bottom: 15px;
+    }
+
+    .upload-section p {
+      color: #4a5568;
+      margin: 10px 0;
+    }
+
+    .btn {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #1557b0;
+    }
+
+    .processing {
+      display: none;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .processing.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1a73e8;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #1a73e8;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .preview {
+      display: none;
+      padding: 20px;
+    }
+
+    .preview.active {
+      display: block;
+    }
+
+    .preview h2 {
+      margin-bottom: 15px;
+      color: #2d3748;
+    }
+
+    .table-preview {
+      background: #f7fafc;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e0;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .export-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: transform 0.2s;
+    }
+
+    .export-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-sheets {
+      background: #34a853;
+      color: white;
+    }
+
+    .btn-excel {
+      background: #217346;
+      color: white;
+    }
+
+    .btn-csv {
+      background: #718096;
+      color: white;
+    }
+
+    .success {
+      display: none;
+      text-align: center;
+      padding: 40px 30px;
+    }
+
+    .success.active {
+      display: block;
+    }
+
+    .success-icon {
+      font-size: 72px;
+      margin-bottom: 20px;
+    }
+
+    .success h2 {
+      color: #34a853;
+      margin-bottom: 10px;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+      margin-top: 20px;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+  </style>
+</head>
+<body>
+  <div class="extension-popup">
+    <div class="header">
+      <h1>📊 PDF to Sheet</h1>
+      <p>Convert PDF tables to Google Sheets or Excel</p>
+    </div>
+
+    <div class="main-content">
+      <!-- Upload Section -->
+      <div id="uploadSection" class="upload-section">
+        <div class="upload-icon">⬆️</div>
+        <p><strong>Drag & Drop PDF here</strong></p>
+        <p>or</p>
+        <button class="btn" onclick="selectFile()">Select PDF File</button>
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;" onchange="handleFile(this.files[0])">
+      </div>
+
+      <!-- Processing Section -->
+      <div id="processingSection" class="processing">
+        <div class="spinner"></div>
+        <p><strong>Processing PDF...</strong></p>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <p id="progressText">0%</p>
+      </div>
+
+      <!-- Preview Section -->
+      <div id="previewSection" class="preview">
+        <h2>Preview Data</h2>
+        <div class="table-preview">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>John Doe</td>
+                <td>john@example.com</td>
+                <td>555-0123</td>
+              </tr>
+              <tr>
+                <td>Jane Smith</td>
+                <td>jane@example.com</td>
+                <td>555-0456</td>
+              </tr>
+              <tr>
+                <td>Bob Johnson</td>
+                <td>bob@example.com</td>
+                <td>555-0789</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="export-buttons">
+          <button class="export-btn btn-sheets" onclick="exportToSheets()">📊 Google Sheets</button>
+          <button class="export-btn btn-excel" onclick="exportToExcel()">📁 Excel</button>
+          <button class="export-btn btn-csv" onclick="exportToCsv()">📄 CSV</button>
+        </div>
+      </div>
+
+      <!-- Success Section -->
+      <div id="successSection" class="success">
+        <div class="success-icon">✅</div>
+        <h2>Success!</h2>
+        <p id="successMessage">File exported successfully</p>
+        <div class="export-buttons" style="margin-top: 20px;">
+          <button class="export-btn btn-excel" onclick="downloadFile()">📥 Download File</button>
+          <button class="export-btn btn-sheets" onclick="openInDrive()">📊 Open in Google Drive</button>
+        </div>
+        <button class="btn btn-secondary" onclick="reset()">Convert Another File</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadSection = document.getElementById('uploadSection');
+    const processingSection = document.getElementById('processingSection');
+    const previewSection = document.getElementById('previewSection');
+    const successSection = document.getElementById('successSection');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const fileInput = document.getElementById('fileInput');
+    const successMessage = document.getElementById('successMessage');
+
+    // Track export format and data
+    let exportFormat = 'excel'; // 'excel', 'csv', or 'sheets'
+    let exportedData = [
+      ['Name', 'Email', 'Phone'],
+      ['John Doe', 'john@example.com', '555-0123'],
+      ['Jane Smith', 'jane@example.com', '555-0456'],
+      ['Bob Johnson', 'bob@example.com', '555-0789']
+    ];
+    let driveFileUrl = null;
+
+    // Drag and drop handlers
+    uploadSection.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadSection.classList.add('drag-over');
+    });
+
+    uploadSection.addEventListener('dragleave', () => {
+      uploadSection.classList.remove('drag-over');
+    });
+
+    uploadSection.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadSection.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === 'application/pdf') {
+        handleFile(file);
+      } else {
+        alert('Please drop a PDF file');
+      }
+    });
+
+    function selectFile() {
+      fileInput.click();
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+
+      // Show processing
+      uploadSection.style.display = 'none';
+      processingSection.classList.add('active');
+
+      // Simulate processing
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = progress + '%';
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(showPreview, 500);
+        }
+      }, 200);
+    }
+
+    function showPreview() {
+      processingSection.classList.remove('active');
+      previewSection.classList.add('active');
+    }
+
+    function exportToSheets() {
+      exportFormat = 'sheets';
+      // Simulate Google Sheets creation
+      driveFileUrl = 'https://docs.google.com/spreadsheets/d/DEMO_FILE_ID/edit';
+      successMessage.textContent = 'Spreadsheet created in Google Drive!';
+      showSuccess();
+    }
+
+    function exportToExcel() {
+      exportFormat = 'excel';
+      driveFileUrl = null;
+      successMessage.textContent = 'Excel file ready to download!';
+      showSuccess();
+    }
+
+    function exportToCsv() {
+      exportFormat = 'csv';
+      driveFileUrl = null;
+      successMessage.textContent = 'CSV file ready to download!';
+      showSuccess();
+    }
+
+    function showSuccess() {
+      previewSection.classList.remove('active');
+      successSection.classList.add('active');
+    }
+
+    function downloadFile() {
+      let content, filename, mimeType;
+
+      if (exportFormat === 'csv') {
+        // Generate CSV
+        content = exportedData.map(row => row.join(',')).join('\n');
+        filename = 'table-data.csv';
+        mimeType = 'text/csv';
+      } else if (exportFormat === 'excel') {
+        // Generate simple Excel-compatible CSV with BOM
+        const BOM = '\uFEFF';
+        content = BOM + exportedData.map(row => row.join(',')).join('\n');
+        filename = 'table-data.xlsx';
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else {
+        alert('This format is only available in Google Drive');
+        return;
+      }
+
+      // Create download link
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function openInDrive() {
+      if (exportFormat === 'sheets' && driveFileUrl) {
+        window.open(driveFileUrl, '_blank');
+      } else {
+        alert('Please use "Export to Google Sheets" option to open in Drive');
+      }
+    }
+
+    function reset() {
+      successSection.classList.remove('active');
+      uploadSection.style.display = 'block';
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+      exportFormat = 'excel';
+      driveFileUrl = null;
+    }
+  </script>
+</body>
+</html>
