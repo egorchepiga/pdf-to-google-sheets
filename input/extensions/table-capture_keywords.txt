@@ -1,0 +1,8 @@
+extract tables from PDF
+PDF table to Google Sheets
+capture PDF table data
+export PDF to spreadsheet
+multi-page PDF table extraction
+PDF to Excel converter
+copy PDF table to clipboard
+batch export PDF tables

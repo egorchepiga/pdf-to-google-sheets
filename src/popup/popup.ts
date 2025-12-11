@@ -1,0 +1,245 @@
+// Popup UI Logic
+type Section = 'upload' | 'processing' | 'preview' | 'success' | 'error';
+
+class PopupUI {
+  private currentSection: Section = 'upload';
+  private currentFile: File | null = null;
+  private extractedData: string[][] = [];
+
+  constructor() {
+    this.init();
+  }
+
+  private init() {
+    // Set initial section
+    this.showSection('upload');
+
+    // File input events
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    const selectFileBtn = document.getElementById('selectFileBtn')!;
+    const dropZone = document.getElementById('dropZone')!;
+
+    selectFileBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer?.files;
+      if (files && files[0]?.type === 'application/pdf') {
+        this.handleFile(files[0]);
+      }
+    });
+
+    // Export buttons
+    document.getElementById('exportSheetsBtn')!.addEventListener('click', () => this.exportToSheets());
+    document.getElementById('exportExcelBtn')!.addEventListener('click', () => this.exportToExcel());
+    document.getElementById('exportCsvBtn')!.addEventListener('click', () => this.exportToCsv());
+
+    // Navigation buttons
+    document.getElementById('newFileBtn')!.addEventListener('click', () => this.showSection('upload'));
+    document.getElementById('retryBtn')!.addEventListener('click', () => this.showSection('upload'));
+  }
+
+  private showSection(section: Section) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(el => {
+      el.classList.remove('active');
+      el.classList.add('hidden');
+    });
+
+    // Show target section
+    const sectionId = `${section}Section`;
+    const sectionEl = document.getElementById(sectionId);
+    if (sectionEl) {
+      sectionEl.classList.add('active');
+      sectionEl.classList.remove('hidden');
+    }
+
+    this.currentSection = section;
+  }
+
+  private handleFileSelect(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      this.handleFile(file);
+    }
+  }
+
+  private async handleFile(file: File) {
+    this.currentFile = file;
+    this.showSection('processing');
+    this.updateProgress(0, 'Reading PDF file...');
+
+    try {
+      // Read file as ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      this.updateProgress(20, 'Parsing PDF...');
+
+      // Send to background for processing
+      const response = await chrome.runtime.sendMessage({
+        action: 'processPdf',
+        data: arrayBuffer
+      });
+
+      if (response.success) {
+        this.extractedData = response.tables;
+        this.updateProgress(100, 'Complete!');
+        setTimeout(() => this.showPreview(response.tables), 500);
+      } else {
+        throw new Error(response.error || 'Processing failed');
+      }
+    } catch (error) {
+      this.showError(error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  private updateProgress(percent: number, message: string) {
+    const progressFill = document.getElementById('progressFill')!;
+    const progressText = document.getElementById('progressText')!;
+    const statusText = document.getElementById('statusText')!;
+
+    progressFill.style.width = `${percent}%`;
+    progressText.textContent = `${percent}%`;
+    statusText.textContent = message;
+  }
+
+  private showPreview(tables: string[][]) {
+    const preview = document.getElementById('tablePreview')!;
+
+    if (tables.length === 0) {
+      preview.innerHTML = '<p>No tables found in PDF</p>';
+      return;
+    }
+
+    // Show first table as preview
+    const table = document.createElement('table');
+    const maxRows = Math.min(tables.length, 10); // Show max 10 rows
+
+    for (let i = 0; i < maxRows; i++) {
+      const row = document.createElement('tr');
+      const isHeader = i === 0;
+
+      for (const cell of tables[i]) {
+        const cellEl = document.createElement(isHeader ? 'th' : 'td');
+        cellEl.textContent = cell;
+        row.appendChild(cellEl);
+      }
+
+      table.appendChild(row);
+    }
+
+    preview.innerHTML = '';
+    preview.appendChild(table);
+
+    if (tables.length > 10) {
+      const note = document.createElement('p');
+      note.textContent = `Showing first 10 of ${tables.length} rows`;
+      note.style.cssText = 'color: #718096; font-size: 12px; margin-top: 8px;';
+      preview.appendChild(note);
+    }
+
+    this.showSection('preview');
+  }
+
+  private async exportToSheets() {
+    this.showSection('processing');
+    this.updateProgress(0, 'Creating Google Sheet...');
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'exportToSheets',
+        data: {
+          title: this.currentFile?.name.replace('.pdf', '') || 'PDF Data',
+          tables: this.extractedData
+        }
+      });
+
+      if (response.success) {
+        this.showSuccess('Exported to Google Sheets', response.url);
+      } else {
+        throw new Error(response.error || 'Export failed');
+      }
+    } catch (error) {
+      this.showError(error instanceof Error ? error.message : 'Export failed');
+    }
+  }
+
+  private async exportToExcel() {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'exportToExcel',
+        data: {
+          filename: this.currentFile?.name.replace('.pdf', '.xlsx') || 'data.xlsx',
+          tables: this.extractedData
+        }
+      });
+
+      if (response.success) {
+        this.showSuccess('Excel file downloaded', '');
+      } else {
+        throw new Error(response.error || 'Export failed');
+      }
+    } catch (error) {
+      this.showError(error instanceof Error ? error.message : 'Export failed');
+    }
+  }
+
+  private async exportToCsv() {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'exportToCsv',
+        data: {
+          filename: this.currentFile?.name.replace('.pdf', '.csv') || 'data.csv',
+          tables: this.extractedData
+        }
+      });
+
+      if (response.success) {
+        this.showSuccess('CSV file downloaded', '');
+      } else {
+        throw new Error(response.error || 'Export failed');
+      }
+    } catch (error) {
+      this.showError(error instanceof Error ? error.message : 'Export failed');
+    }
+  }
+
+  private showSuccess(message: string, url: string) {
+    const messageEl = document.getElementById('successMessage')!;
+    const linkEl = document.getElementById('successLink') as HTMLAnchorElement;
+
+    messageEl.textContent = message;
+
+    if (url) {
+      linkEl.href = url;
+      linkEl.style.display = 'inline-block';
+    } else {
+      linkEl.style.display = 'none';
+    }
+
+    this.showSection('success');
+  }
+
+  private showError(message: string) {
+    const errorMessage = document.getElementById('errorMessage')!;
+    errorMessage.textContent = message;
+    this.showSection('error');
+  }
+}
+
+// Initialize popup when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  new PopupUI();
+});

@@ -1,0 +1,7 @@
+automate Google Sheets data import
+merge multiple spreadsheets
+generate PDF from Google Sheets
+connect Google Sheets Excel
+spreadsheet automation workflow
+split data to multiple sheets
+scheduled spreadsheet update

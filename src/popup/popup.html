@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF to Sheet</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PDF to Sheet</h1>
+      <p>Convert PDF tables to Google Sheets or Excel</p>
+    </header>
+
+    <main id="mainContent">
+      <!-- Upload Section -->
+      <section id="uploadSection" class="section">
+        <div class="drop-zone" id="dropZone">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <p>Drag & Drop PDF here</p>
+          <p class="sub-text">or</p>
+          <button id="selectFileBtn" class="btn btn-primary">Select PDF File</button>
+          <input type="file" id="fileInput" accept=".pdf" hidden>
+        </div>
+      </section>
+
+      <!-- Processing Section -->
+      <section id="processingSection" class="section hidden">
+        <div class="progress-container">
+          <div class="spinner"></div>
+          <p id="statusText">Processing PDF...</p>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p id="progressText" class="progress-text">0%</p>
+        </div>
+      </section>
+
+      <!-- Preview Section -->
+      <section id="previewSection" class="section hidden">
+        <h2>Preview Data</h2>
+        <div class="table-preview" id="tablePreview"></div>
+        <div class="action-buttons">
+          <button id="exportSheetsBtn" class="btn btn-success">
+            📊 Export to Google Sheets
+          </button>
+          <button id="exportExcelBtn" class="btn btn-primary">
+            📁 Download as Excel
+          </button>
+          <button id="exportCsvBtn" class="btn btn-secondary">
+            📄 Download as CSV
+          </button>
+        </div>
+      </section>
+
+      <!-- Success Section -->
+      <section id="successSection" class="section hidden">
+        <div class="success-message">
+          <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <h2>Success!</h2>
+          <p id="successMessage">File exported successfully</p>
+          <a id="successLink" href="#" target="_blank" class="success-link">Open File</a>
+          <button id="newFileBtn" class="btn btn-primary">Convert Another File</button>
+        </div>
+      </section>
+
+      <!-- Error Section -->
+      <section id="errorSection" class="section hidden">
+        <div class="error-message">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h2>Error</h2>
+          <p id="errorMessage">Something went wrong</p>
+          <button id="retryBtn" class="btn btn-primary">Try Again</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+      <button id="historyBtn" class="icon-btn" title="History">📜</button>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.ts"></script>
+</body>
+</html>

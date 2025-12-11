@@ -1,0 +1,4 @@
+OCR data extractor
+document scanner OCR
+extract text to table
+screen OCR to spreadsheet

@@ -1,0 +1,4 @@
+copy table as CSV
+HTML table to CSV
+export table to spreadsheet
+table capture free

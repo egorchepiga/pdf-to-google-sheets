@@ -1,0 +1,6 @@
+capture tabular data website
+export table to Google Sheets
+copy table to Excel
+PDF table to CSV
+web table scraper
+extract table from webpage

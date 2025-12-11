@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "PDF to Sheet Converter",
+  "version": "1.0.0",
+  "description": "Convert PDF tables to Google Sheets and Excel with one click",
+
+  "action": {
+    "default_popup": "src/popup/popup.html"
+  },
+
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+
+  "permissions": [
+    "storage",
+    "identity",
+    "downloads",
+    "offscreen"
+  ],
+
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://sheets.googleapis.com/*"
+  ],
+
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/spreadsheets"
+    ]
+  },
+
+  "web_accessible_resources": [{
+    "resources": ["pdf.worker.min.js"],
+    "matches": ["<all_urls>"]
+  }]
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF to Sheet Extension - Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 { color: #1a73e8; }
+    .test-section {
+      background: #f8f9fa;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PDF to Sheet Extension - Test Page</h1>
+
+  <div class="test-section">
+    <h2>Popup UI Test</h2>
+    <p>Testing the extension popup interface:</p>
+    <iframe src="dist/src/popup/popup.html" title="Extension Popup"></iframe>
+  </div>
+
+  <div class="test-section">
+    <h2>Manual Test Checklist</h2>
+    <ul>
+      <li>✓ Popup HTML loads without errors</li>
+      <li>✓ UI elements are visible (upload section, buttons)</li>
+      <li>✓ Styling is applied correctly</li>
+      <li>✓ No console errors</li>
+    </ul>
+  </div>
+</body>
+</html>
