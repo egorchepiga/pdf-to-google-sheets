@@ -23,3 +23,12 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Docker
+.dockerignore
+docker-compose.override.yml
