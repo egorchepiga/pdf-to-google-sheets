@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF to Sheet - Live Demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -332,15 +333,23 @@
     const fileInput = document.getElementById('fileInput');
     const successMessage = document.getElementById('successMessage');
 
+    // Configure PDF.js worker
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js';
+    }
+
     // Track export format and data
     let exportFormat = 'excel'; // 'excel', 'csv', or 'sheets'
-    let exportedData = [
-      ['Name', 'Email', 'Phone'],
-      ['John Doe', 'john@example.com', '555-0123'],
-      ['Jane Smith', 'jane@example.com', '555-0456'],
-      ['Bob Johnson', 'bob@example.com', '555-0789']
-    ];
+    let exportedData = [];
     let driveFileUrl = null;
+    let currentPdfFile = null;
+
+    // Extraction methods (can be extended with OCR later)
+    const ExtractionMethod = {
+      TEXT: 'text',        // Default: extract text with coordinates
+      OCR: 'ocr',          // Future: Tesseract.js for scanned PDFs
+      HYBRID: 'hybrid'     // Future: Try text first, fallback to OCR
+    };
 
     // Drag and drop handlers
     uploadSection.addEventListener('dragover', (e) => {
@@ -367,25 +376,217 @@
       fileInput.click();
     }
 
-    function handleFile(file) {
+    async function handleFile(file) {
       if (!file) return;
 
-      // Show processing
+      currentPdfFile = file;
       uploadSection.style.display = 'none';
       processingSection.classList.add('active');
 
-      // Simulate processing
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        progressFill.style.width = progress + '%';
-        progressText.textContent = progress + '%';
+      try {
+        // Update progress
+        progressFill.style.width = '20%';
+        progressText.textContent = 'Reading PDF file...';
 
-        if (progress >= 100) {
-          clearInterval(interval);
-          setTimeout(showPreview, 500);
+        // Read file as ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+
+        progressFill.style.width = '40%';
+        progressText.textContent = 'Parsing PDF structure...';
+
+        // Parse PDF with text extraction
+        exportedData = await parsePdf(arrayBuffer, ExtractionMethod.TEXT);
+
+        progressFill.style.width = '80%';
+        progressText.textContent = 'Building table preview...';
+
+        if (exportedData.length === 0) {
+          throw new Error('No tables found in PDF. The document may contain only images or scanned content.');
         }
-      }, 200);
+
+        // Update preview table
+        updatePreviewTable(exportedData);
+
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Complete!';
+
+        setTimeout(showPreview, 500);
+      } catch (error) {
+        console.error('PDF processing error:', error);
+        alert(`Error: ${error.message}\n\nNote: This demo currently supports text-based PDFs only. OCR for scanned documents coming soon!`);
+        reset();
+      }
+    }
+
+    /**
+     * Parse PDF and extract tables
+     * @param {ArrayBuffer} arrayBuffer - PDF file data
+     * @param {string} method - Extraction method (TEXT, OCR, or HYBRID)
+     * @returns {Promise<Array>} - 2D array of table data
+     */
+    async function parsePdf(arrayBuffer, method = ExtractionMethod.TEXT) {
+      if (method === ExtractionMethod.OCR) {
+        // Future: OCR implementation with Tesseract.js
+        throw new Error('OCR not yet implemented');
+      }
+
+      if (method === ExtractionMethod.HYBRID) {
+        // Future: Try text first, fallback to OCR
+        try {
+          return await parsePdfText(arrayBuffer);
+        } catch (e) {
+          // Fallback to OCR
+          throw new Error('Hybrid extraction not yet implemented');
+        }
+      }
+
+      // Default: text extraction
+      return await parsePdfText(arrayBuffer);
+    }
+
+    /**
+     * Extract text from PDF using PDF.js
+     */
+    async function parsePdfText(arrayBuffer) {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log(`PDF loaded: ${pdf.numPages} pages`);
+
+      const allTables = [];
+
+      // Process each page
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const viewport = page.getViewport({ scale: 1 });
+
+        // Extract text items with coordinates
+        const items = textContent.items.map(item => ({
+          text: item.str,
+          x: item.transform[4],
+          y: viewport.height - item.transform[5],
+          width: item.width,
+          height: item.transform[0]
+        }));
+
+        // Extract table from text items
+        const table = extractTable(items);
+        if (table.length > 0) {
+          allTables.push(...table);
+        }
+      }
+
+      return allTables;
+    }
+
+    /**
+     * Extract table from text items based on coordinates
+     * (Algorithm from src/offscreen/offscreen.ts)
+     */
+    function extractTable(items) {
+      if (items.length === 0) return [];
+
+      const rowThreshold = 5;  // Max Y difference for same row
+      const colThreshold = 10; // Min X difference for different column
+
+      // Sort by Y coordinate (top to bottom)
+      const sortedItems = [...items].sort((a, b) => a.y - b.y);
+
+      // Group items into rows
+      const rows = [];
+      let currentRow = [];
+      let lastY = null;
+
+      for (const item of sortedItems) {
+        if (lastY !== null && Math.abs(item.y - lastY) > rowThreshold) {
+          rows.push(currentRow.sort((a, b) => a.x - b.x));
+          currentRow = [];
+        }
+        currentRow.push(item);
+        lastY = item.y;
+      }
+
+      if (currentRow.length > 0) {
+        rows.push(currentRow.sort((a, b) => a.x - b.x));
+      }
+
+      // Detect column positions
+      const allX = rows.flat().map(item => item.x).sort((a, b) => a - b);
+      const columns = [];
+
+      for (const x of allX) {
+        if (columns.length === 0 || x - columns[columns.length - 1] > colThreshold) {
+          columns.push(x);
+        }
+      }
+
+      // Build table
+      return rows.map(row => {
+        const tableRow = new Array(columns.length).fill('');
+
+        for (const item of row) {
+          // Find closest column
+          let colIdx = 0;
+          let minDist = Math.abs(item.x - columns[0]);
+
+          for (let i = 1; i < columns.length; i++) {
+            const dist = Math.abs(item.x - columns[i]);
+            if (dist < minDist) {
+              minDist = dist;
+              colIdx = i;
+            }
+          }
+
+          // Append text to cell
+          tableRow[colIdx] += (tableRow[colIdx] ? ' ' : '') + item.text;
+        }
+
+        return tableRow;
+      });
+    }
+
+    /**
+     * Update preview table with extracted data
+     */
+    function updatePreviewTable(data) {
+      const tablePreview = document.querySelector('.table-preview table');
+      if (!tablePreview || data.length === 0) return;
+
+      // Clear existing content
+      tablePreview.innerHTML = '';
+
+      // Create header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      data[0].forEach(cell => {
+        const th = document.createElement('th');
+        th.textContent = cell || '';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      tablePreview.appendChild(thead);
+
+      // Create body
+      const tbody = document.createElement('tbody');
+      for (let i = 1; i < Math.min(data.length, 10); i++) {
+        const row = document.createElement('tr');
+        data[i].forEach(cell => {
+          const td = document.createElement('td');
+          td.textContent = cell || '';
+          row.appendChild(td);
+        });
+        tbody.appendChild(row);
+      }
+      tablePreview.appendChild(tbody);
+
+      // Show total rows if more than 10
+      if (data.length > 10) {
+        const note = document.createElement('p');
+        note.style.marginTop = '10px';
+        note.style.fontSize = '12px';
+        note.style.color = '#718096';
+        note.textContent = `Showing first 10 rows of ${data.length} total rows`;
+        tablePreview.parentElement.appendChild(note);
+      }
     }
 
     function showPreview() {
