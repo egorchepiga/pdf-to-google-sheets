@@ -92,3 +92,50 @@ export function extractTable(
   });
 }
 
+/**
+ * Normalize table data (ensure all rows have same column count)
+ * @param data - Raw table data
+ * @returns Normalized 2D array with consistent column count
+ */
+export function normalizeTableData(data: any[][]): string[][] {
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Find max column count
+  const maxCols = Math.max(...data.map(row => row.length));
+
+  // Normalize each row
+  return data.map(row => {
+    const normalized = new Array(maxCols).fill('');
+    row.forEach((cell, i) => {
+      normalized[i] = String(cell ?? '');
+    });
+    return normalized;
+  });
+}
+
+/**
+ * Validate table data structure
+ * @param data - Table data to validate
+ * @returns True if valid, false otherwise
+ */
+export function validateTableData(data: unknown): data is string[][] {
+  if (!Array.isArray(data)) {
+    return false;
+  }
+
+  if (data.length === 0) {
+    return true; // Empty array is valid
+  }
+
+  // Check if all elements are arrays
+  if (!data.every(row => Array.isArray(row))) {
+    return false;
+  }
+
+  // Check if all cells are strings
+  return data.every(row =>
+    row.every(cell => typeof cell === 'string')
+  );
+}

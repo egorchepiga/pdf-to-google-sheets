@@ -1,0 +1,29 @@
+{
+  "phase": "bug-fixing",
+  "priority": "high",
+  "timestamp": "2025-12-12T09:30:00.000Z",
+  "files_modified": [
+    {
+      "path": "src/offscreen/offscreen.ts",
+      "backup": ".tmp/current/backups/.rollback/src-offscreen-offscreen.ts.backup",
+      "timestamp": "2025-12-12T09:35:00.000Z",
+      "bug_id": "HIGH-1",
+      "reason": "Remove duplicate extractTable() function, use library import instead"
+    },
+    {
+      "path": "src/background/service-worker.ts",
+      "backup": ".tmp/current/backups/.rollback/src-background-service-worker.ts.backup",
+      "timestamp": "2025-12-12T09:36:00.000Z",
+      "bug_id": "HIGH-2",
+      "reason": "Delete unused downloadBlob() function that cannot work in MV3 Service Workers"
+    },
+    {
+      "path": "src/lib/table-extractor.ts",
+      "backup": ".tmp/current/backups/.rollback/src-lib-table-extractor.ts.backup",
+      "timestamp": "2025-12-12T09:37:00.000Z",
+      "bug_id": "HIGH-3",
+      "reason": "Remove unused exported functions normalizeTableData and validateTableData"
+    }
+  ],
+  "files_created": []
+}

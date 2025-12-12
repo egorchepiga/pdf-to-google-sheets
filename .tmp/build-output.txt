@@ -1,0 +1,27 @@
+
+> pdf-to-sheet-extension@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 11 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mservice-worker-loader.js                   [39m[1m[2m    0.05 kB[22m[1m[22m
+[2mdist/[22m[32msrc/offscreen/offscreen.html               [39m[1m[2m    0.47 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m
+[2mdist/[22m[32mmanifest.json                              [39m[1m[2m    0.94 kB[22m[1m[22m[2m │ gzip:   0.48 kB[22m
+[2mdist/[22m[32m.vite/manifest.json                        [39m[1m[2m    1.28 kB[22m[1m[22m[2m │ gzip:   0.38 kB[22m
+[2mdist/[22m[32msrc/popup/popup.html                       [39m[1m[2m    3.75 kB[22m[1m[22m[2m │ gzip:   1.23 kB[22m
+[2mdist/[22m[32mpdf.worker.min.js                          [39m[1m[2m1,375.84 kB[22m[1m[22m
+[2mdist/[22m[35massets/popup-De1pQHwe.css                  [39m[1m[2m    3.10 kB[22m[1m[22m[2m │ gzip:   1.15 kB[22m
+[2mdist/[22m[36massets/popup.html-Cr27NdOK.js              [39m[1m[2m    0.07 kB[22m[1m[22m[2m │ gzip:   0.09 kB[22m
+[2mdist/[22m[36massets/modulepreload-polyfill-B5Qt9EMX.js  [39m[1m[2m    0.71 kB[22m[1m[22m[2m │ gzip:   0.40 kB[22m
+[2mdist/[22m[36massets/service-worker.ts-D_KYcKaf.js       [39m[1m[2m    4.53 kB[22m[1m[22m[2m │ gzip:   1.64 kB[22m
+[2mdist/[22m[36massets/popup-DoLdNo3U.js                   [39m[1m[2m    5.04 kB[22m[1m[22m[2m │ gzip:   1.63 kB[22m
+[2mdist/[22m[36massets/offscreen-Bp-DHUXG.js               [39m[1m[33m  650.26 kB[39m[22m[2m │ gzip: 203.80 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 1.42s[39m

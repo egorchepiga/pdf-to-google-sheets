@@ -331,4 +331,20 @@ function generateCSV(data: string[][]): string {
   return BOM + rows.join('\n');
 }
 
+/**
+ * Download blob as file
+ */
+async function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+
+  await chrome.downloads.download({
+    url,
+    filename,
+    saveAs: true
+  });
+
+  // Clean up
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 console.log('Service Worker initialized');
