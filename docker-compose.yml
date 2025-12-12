@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Development server (Vite dev mode)
+  dev:
+    build:
+      context: .
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev -- --host 0.0.0.0
+
+  # Test runner (Jest)
+  test:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm test
+
+  # Test runner with coverage
+  test-coverage:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./coverage:/app/coverage
+    command: npm run test:coverage
+
+  # Build production
+  build:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - ./dist:/app/dist
+
+  # Serve built extension (for testing)
+  serve:
+    build:
+      context: .
+      target: production
+    ports:
+      - "8080:80"
+    depends_on:
+      - build
+
+  # Playwright for E2E testing (headless Chrome)
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.40.0-focal
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npx playwright test
+    environment:
+      - CI=true
