@@ -24,6 +24,12 @@ npm-debug.log*
 .env
 .env.local
 
+# Google OAuth secrets
+client_secret*.json
+
+# Release archives
+*.zip
+
 # Testing
 coverage/
 .nyc_output/
