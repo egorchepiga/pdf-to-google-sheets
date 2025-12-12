@@ -35,14 +35,27 @@ pdf-to-sheet/
 │   ├── offscreen/
 │   │   ├── offscreen.html      # Offscreen document
 │   │   └── offscreen.ts        # PDF processing & Excel generation
-│   ├── lib/                    # Utility libraries (future)
+│   ├── lib/
+│   │   └── table-extractor.ts  # Table extraction library
 │   └── types/                  # TypeScript definitions
+├── tests/
+│   ├── unit/                   # Unit tests (30 tests)
+│   │   └── table-extractor.test.ts
+│   ├── integration/            # Integration tests (41 tests)
+│   │   └── pdf-parsing.test.ts
+│   ├── fixtures/               # Test PDF files (8 files)
+│   ├── setup.ts                # Jest setup & Chrome API mocks
+│   └── generate-test-pdfs.cjs  # PDF generator script
 ├── public/
 │   └── pdf.worker.min.js       # PDF.js worker
 ├── icons/                      # Extension icons
 ├── package.json
 ├── tsconfig.json
-└── vite.config.ts
+├── vite.config.ts
+├── jest.config.cjs             # Jest configuration
+├── Dockerfile                  # Docker multi-stage build
+├── docker-compose.yml          # Docker services
+└── DOCKER.md                   # Docker documentation
 ```
 
 ## Setup
@@ -94,6 +107,12 @@ npm run build
 - `npm run dev` - Start dev server with HMR
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+- `npm test` - Run all tests
+- `npm run test:unit` - Run unit tests only
+- `npm run test:integration` - Run integration tests only
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:generate-pdfs` - Generate test PDF fixtures
 
 ### Architecture
 
@@ -114,6 +133,72 @@ npm run build
 - Drag & drop file upload
 - Progress tracking
 - Data preview before export
+
+## Testing
+
+### Test Suite (71 Tests ✅)
+
+- **30 Unit Tests** - Comprehensive coverage of table extraction algorithm
+- **41 Integration Tests** - PDF fixture validation
+
+### Test Coverage
+
+Exceeds all thresholds:
+- **Statements**: 100% (required 80%)
+- **Branches**: 94.59% (required 75%)
+- **Functions**: 100% (required 85%)
+- **Lines**: 100% (required 80%)
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests
+npm run test:integration
+
+# Watch mode (auto-rerun on changes)
+npm run test:watch
+```
+
+### Test Fixtures
+
+8 different PDF files for testing various scenarios:
+- `simple-3x3.pdf` - Basic 3x3 table
+- `wide-table.pdf` - 10 columns (landscape)
+- `long-table.pdf` - 50 rows with page breaks
+- `special-chars.pdf` - Quotes, dollar signs, special characters
+- `multi-page.pdf` - Table split across 2 pages
+- `empty.pdf` - PDF without tables
+- `misaligned.pdf` - Slightly offset columns
+- `numeric.pdf` - Decimal numbers, commas, currency
+
+### Docker Support
+
+Run tests and builds in isolated Docker environment:
+
+```bash
+# Development server
+docker-compose up dev
+
+# Run tests
+docker-compose up test
+
+# Build production
+docker-compose up build
+
+# Run tests with coverage
+docker-compose up test-coverage
+```
+
+See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
 
 ## Usage
 
