@@ -218,6 +218,22 @@ See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
 - Complex multi-page tables may require manual adjustment
 - Google API has rate limits (60 requests/min for Sheets)
 
+## Technical Notes (Manifest V3)
+
+This extension implements workarounds for Chrome Extension Manifest V3 limitations:
+
+### Data Transfer Issues
+- **Problem**: `ArrayBuffer` loses data when passed via `chrome.runtime.sendMessage()`
+- **Solution**: Convert to base64 string for transmission between contexts
+- **Affected**: Popup → Service Worker → Offscreen Document communication
+
+### File Download Issues
+- **Problem**: `URL.createObjectURL()` not available in Service Workers
+- **Solution**: Use data URLs with base64 encoding
+- **Affected**: Excel and CSV file downloads
+
+These are known Manifest V3 limitations and the implemented solutions are production-ready.
+
 ## Future Enhancements
 
 - [ ] OCR support for scanned PDFs (Tesseract.js)
