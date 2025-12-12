@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PDF to Sheet Converter",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Convert PDF tables to Google Sheets and Excel with one click",
 
   "action": {
