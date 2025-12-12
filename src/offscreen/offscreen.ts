@@ -30,11 +30,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 /**
  * Parse PDF and extract tables
  */
-async function handleParsePdf(arrayBuffer: ArrayBuffer) {
+async function handleParsePdf(base64Data: string) {
   try {
+    console.log(`Offscreen received base64 data: ${base64Data.length} chars`);
+
+    if (!base64Data || base64Data.length === 0) {
+      return {
+        success: false,
+        error: 'The PDF file is empty, i.e. its size is zero bytes.'
+      };
+    }
+
+    // Convert base64 to ArrayBuffer
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    console.log(`Converted to Uint8Array: ${bytes.length} bytes`);
+
     // Load PDF document
     const pdf = await pdfjsLib.getDocument({
-      data: new Uint8Array(arrayBuffer)
+      data: bytes
     }).promise;
 
     console.log(`PDF loaded: ${pdf.numPages} pages`);
@@ -184,14 +202,15 @@ async function handleGenerateExcel(data: { filename: string; tables: string[][] 
       compression: true
     });
 
-    // Create blob
-    const blob = new Blob([wbout], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
+    // Convert to base64
+    const base64 = btoa(
+      new Uint8Array(wbout).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
     return {
       success: true,
-      blob: blob
+      base64: base64,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     };
   } catch (error) {
     console.error('Excel generation error:', error);

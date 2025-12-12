@@ -83,14 +83,31 @@ class PopupUI {
     this.updateProgress(0, 'Reading PDF file...');
 
     try {
+      // Validate file size
+      if (file.size === 0) {
+        throw new Error('The PDF file is empty, i.e. its size is zero bytes.');
+      }
+
+      console.log(`Reading PDF file: ${file.name}, size: ${file.size} bytes`);
+
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
+      console.log(`ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
+
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error('Failed to read PDF file. Please try again.');
+      }
+
       this.updateProgress(20, 'Parsing PDF...');
+
+      // Convert to base64 to avoid ArrayBuffer serialization issues in MV3
+      const base64 = this.arrayBufferToBase64(arrayBuffer);
+      console.log(`Base64 size: ${base64.length} chars`);
 
       // Send to background for processing
       const response = await chrome.runtime.sendMessage({
         action: 'processPdf',
-        data: arrayBuffer
+        data: base64
       });
 
       if (response.success) {
@@ -236,6 +253,15 @@ class PopupUI {
     const errorMessage = document.getElementById('errorMessage')!;
     errorMessage.textContent = message;
     this.showSection('error');
+  }
+
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 }
 

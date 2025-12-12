@@ -29,16 +29,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 /**
  * Process PDF file using Offscreen Document
  */
-async function handleProcessPdf(arrayBuffer: ArrayBuffer) {
+async function handleProcessPdf(base64Data: string) {
   try {
+    console.log(`Service Worker received base64 data: ${base64Data.length} chars`);
+
+    if (!base64Data || base64Data.length === 0) {
+      return {
+        success: false,
+        error: 'The PDF file is empty, i.e. its size is zero bytes.'
+      };
+    }
+
     // Ensure offscreen document exists
     await ensureOffscreenDocument();
 
-    // Send PDF data to offscreen for processing
+    // Send base64 data directly to offscreen (don't convert here!)
     const response = await chrome.runtime.sendMessage({
       target: 'offscreen',
       action: 'parsePdf',
-      data: arrayBuffer
+      data: base64Data
     });
 
     return response;
@@ -86,8 +95,16 @@ async function handleExportToExcel(data: { filename: string; tables: string[][] 
     });
 
     if (response.success) {
-      // Download the blob
-      await downloadBlob(response.blob, data.filename);
+      // Create data URL from base64
+      const dataUrl = `data:${response.mimeType};base64,${response.base64}`;
+
+      // Download using chrome.downloads API
+      await chrome.downloads.download({
+        url: dataUrl,
+        filename: data.filename,
+        saveAs: true
+      });
+
       return { success: true };
     }
 
@@ -107,9 +124,17 @@ async function handleExportToExcel(data: { filename: string; tables: string[][] 
 async function handleExportToCsv(data: { filename: string; tables: string[][] }) {
   try {
     const csvContent = generateCSV(data.tables);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 
-    await downloadBlob(blob, data.filename);
+    // Convert to base64
+    const base64 = btoa(unescape(encodeURIComponent(csvContent)));
+    const dataUrl = `data:text/csv;charset=utf-8;base64,${base64}`;
+
+    // Download using chrome.downloads API
+    await chrome.downloads.download({
+      url: dataUrl,
+      filename: data.filename,
+      saveAs: true
+    });
 
     return { success: true };
   } catch (error) {
