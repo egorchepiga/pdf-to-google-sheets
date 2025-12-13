@@ -251,18 +251,6 @@ These are known Manifest V3 limitations and the implemented solutions are produc
 - `offscreen` - PDF processing in offscreen document
 - `host_permissions` - Access Google APIs
 
-### OAuth Security Note
-
-The OAuth Client ID is included in `manifest.json` and is publicly visible once the extension is published. This is the correct and standard implementation for Chrome Extensions following Google's OAuth best practices:
-
-- **Client ID is public** - This is intentional and not a security vulnerability
-- **Client Secret is NOT included** - Only the Client ID is exposed (as designed)
-- **Scopes are limited** - Uses `drive.file` (not full `drive`) to avoid Google Security Assessment
-  - `drive.file` scope only accesses files created by this extension
-  - Does NOT require Google's restricted scope verification process
-
-This follows Google's recommended architecture for Chrome Extensions with OAuth2.
-
 ## License
 
 MIT

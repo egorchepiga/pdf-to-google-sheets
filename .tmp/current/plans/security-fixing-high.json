@@ -1,0 +1,93 @@
+{
+  "workflow": "vulnerability-management",
+  "phase": "fixing",
+  "phaseNumber": 3,
+  "config": {
+    "priority": "high",
+    "maxSecuritysPerRun": 50,
+    "sourceReport": "security-scan-report.md",
+    "targetIssues": [
+      {
+        "issueId": "ISSUE-2",
+        "title": "Potential SQL Injection via Google Drive API Query",
+        "file": "src/background/service-worker.ts:196",
+        "category": "Security/Injection",
+        "description": "User-controlled folder name directly interpolated into Google Drive API query without escaping",
+        "currentRisk": "LOW (hardcoded folderName currently)",
+        "architecturalRisk": "HIGH",
+        "fixStrategy": "escape-special-characters",
+        "breakingChanges": false,
+        "requiresTesting": true,
+        "codeSnippet": {
+          "vulnerable": "const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`, ...)",
+          "secure": "const escapedName = folderName.replace(/'/g, \"\\\\'\")\nconst query = `name='${escapedName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`\nconst params = new URLSearchParams({ q: query })\nconst searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, ...)"
+        }
+      },
+      {
+        "issueId": "ISSUE-3",
+        "title": "XSS Vulnerability in demo.html",
+        "file": "demo.html:555",
+        "category": "Security/XSS",
+        "description": "Direct use of innerHTML without sanitization creates XSS risk",
+        "currentRisk": "LOW (demo file, innerHTML='', not in production)",
+        "developerRisk": "MEDIUM (pattern could be copied)",
+        "productionRisk": "LOW (not part of Chrome Extension)",
+        "fixStrategy": "replace-with-safe-method",
+        "breakingChanges": false,
+        "requiresTesting": false,
+        "codeSnippet": {
+          "vulnerable": "tablePreview.innerHTML = '';",
+          "secure": "tablePreview.replaceChildren(); // Modern, safe alternative"
+        }
+      }
+    ],
+    "validationStrategy": {
+      "preValidation": [
+        "git diff src/background/service-worker.ts",
+        "git diff demo.html"
+      ],
+      "postValidation": [
+        "npx tsc --noEmit",
+        "npm run build",
+        "npm test"
+      ],
+      "regressionTests": [
+        "test:unit",
+        "test:integration"
+      ],
+      "manualTests": [
+        "Test Google Sheets export with special characters in folder name",
+        "Verify demo.html still clears table preview correctly"
+      ]
+    }
+  },
+  "validation": {
+    "required": ["report-exists", "type-check", "build"],
+    "optional": ["tests"],
+    "regressionChecks": {
+      "mustPass": ["type-check", "build"],
+      "shouldPass": ["all tests"],
+      "breaking": "None expected - both fixes are defensive improvements"
+    }
+  },
+  "nextAgent": "vulnerability-fixer",
+  "timestamp": "2025-12-13T00:50:00.000Z",
+  "metadata": {
+    "createdBy": "security-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "stage": "high",
+    "attempt": 1,
+    "maxAttempts": 3,
+    "issueCount": 2,
+    "estimatedDuration": "10-15 minutes",
+    "riskLevel": "MEDIUM",
+    "requiresManualReview": false,
+    "notes": [
+      "SQL injection fix is defensive - folderName is currently hardcoded",
+      "XSS fix is in demo.html (not production code)",
+      "Both fixes improve security posture without breaking changes",
+      "Production code (src/popup/popup.ts) already uses safe DOM methods"
+    ]
+  }
+}

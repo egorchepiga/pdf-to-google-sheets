@@ -1,0 +1,25 @@
+{
+  "workflow": "vulnerability-management",
+  "phase": "verification",
+  "phaseNumber": 6,
+  "config": {
+    "categories": ["type-errors", "runtime-errors", "security", "performance", "dead-code", "devulnerability-code"],
+    "baselineReport": "security-scan-report.md"
+  },
+  "validation": {
+    "required": ["report-exists", "validation-passed"],
+    "optional": ["no-new-vulnerabilities"]
+  },
+  "nextAgent": "security-scanner",
+  "timestamp": "2025-12-13T09:18:00Z",
+  "metadata": {
+    "createdBy": "security-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "verificationType": "post-fixing",
+    "prioritiesCompleted": ["critical", "high", "medium", "low"],
+    "totalFixed": 7,
+    "totalUnfixable": 1,
+    "successRate": "87.5%"
+  }
+}

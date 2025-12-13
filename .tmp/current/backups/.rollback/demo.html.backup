@@ -551,8 +551,8 @@
       const tablePreview = document.querySelector('.table-preview table');
       if (!tablePreview || data.length === 0) return;
 
-      // Clear existing content (safe method)
-      tablePreview.replaceChildren();
+      // Clear existing content
+      tablePreview.innerHTML = '';
 
       // Create header
       const thead = document.createElement('thead');

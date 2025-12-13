@@ -85,7 +85,10 @@
       </section>
     </main>
 
-    <!-- Footer removed: Settings and History features not yet implemented -->
+    <footer>
+      <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+      <button id="historyBtn" class="icon-btn" title="History">📜</button>
+    </footer>
   </div>
 
   <script type="module" src="popup.ts"></script>

@@ -1,0 +1,24 @@
+{
+  "workflow": "vulnerability-management",
+  "phase": "fixing",
+  "phaseNumber": 4,
+  "config": {
+    "priority": "medium",
+    "maxSecuritysPerRun": 50,
+    "sourceReport": "security-scan-report.md"
+  },
+  "validation": {
+    "required": ["report-exists", "type-check", "build"],
+    "optional": ["tests"]
+  },
+  "nextAgent": "vulnerability-fixer",
+  "timestamp": "2025-12-13T08:56:00Z",
+  "metadata": {
+    "createdBy": "security-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "stage": "medium",
+    "attempt": 1,
+    "maxAttempts": 3
+  }
+}

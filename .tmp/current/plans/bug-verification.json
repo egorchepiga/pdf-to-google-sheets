@@ -1,0 +1,33 @@
+{
+  "workflow": "bug-management",
+  "phase": "verification",
+  "phaseNumber": 6,
+  "config": {
+    "categories": [
+      "type-errors",
+      "runtime-errors",
+      "security",
+      "performance",
+      "dead-code",
+      "debug-code"
+    ],
+    "baselineReport": "bug-hunting-report.md"
+  },
+  "validation": {
+    "required": [
+      "report-exists",
+      "validation-passed"
+    ],
+    "optional": [
+      "no-new-bugs"
+    ]
+  },
+  "nextAgent": "bug-hunter",
+  "timestamp": "2025-12-12T19:30:00Z",
+  "metadata": {
+    "createdBy": "bug-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "verificationType": "post-fixing"
+  }
+}

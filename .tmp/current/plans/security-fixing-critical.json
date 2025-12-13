@@ -1,0 +1,89 @@
+{
+  "workflow": "vulnerability-management",
+  "phase": "fixing",
+  "phaseNumber": 2,
+  "config": {
+    "priority": "critical",
+    "maxSecuritysPerRun": 50,
+    "sourceReport": "security-scan-report.md",
+    "targetIssues": [
+      {
+        "issueId": "ISSUE-1",
+        "title": "High-Severity Dependency Vulnerabilities",
+        "file": "package.json:20-21",
+        "category": "Security/Dependency Vulnerabilities",
+        "cves": [
+          "GHSA-4r6h-8v6p-xvw6",
+          "GHSA-5pgg-2g8v-p4x9",
+          "GHSA-67mh-4wv8-2f99"
+        ],
+        "cvssScore": "7.8 (High)",
+        "vulnerabilities": [
+          {
+            "package": "xlsx",
+            "currentVersion": "0.18.5",
+            "targetVersion": "latest (>=0.20.2)",
+            "vulnerabilityType": "Prototype Pollution + ReDoS",
+            "impact": "HIGH"
+          },
+          {
+            "package": "vite",
+            "currentVersion": "5.4.11",
+            "targetVersion": "latest (>=7.2.7)",
+            "vulnerabilityType": "Development Server Information Disclosure",
+            "impact": "MODERATE"
+          }
+        ],
+        "fixStrategy": "dependency-update",
+        "breakingChanges": true,
+        "requiresTesting": true
+      }
+    ],
+    "validationStrategy": {
+      "preValidation": [
+        "npm audit",
+        "git diff package.json"
+      ],
+      "postValidation": [
+        "npm audit",
+        "npm test",
+        "npm run build",
+        "npx tsc --noEmit"
+      ],
+      "regressionTests": [
+        "test:unit",
+        "test:integration"
+      ]
+    }
+  },
+  "validation": {
+    "required": ["report-exists", "type-check", "build"],
+    "optional": ["tests"],
+    "regressionChecks": {
+      "mustPass": ["npm audit", "type-check", "build"],
+      "shouldPass": ["all tests"],
+      "breaking": "Review API changes in xlsx (0.18.5 → 0.20.2+) and vite (5.4.11 → 7.2.7+)"
+    }
+  },
+  "nextAgent": "vulnerability-fixer",
+  "timestamp": "2025-12-13T00:15:00.000Z",
+  "metadata": {
+    "createdBy": "security-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "stage": "critical",
+    "attempt": 1,
+    "maxAttempts": 3,
+    "issueCount": 1,
+    "estimatedDuration": "15-20 minutes",
+    "riskLevel": "HIGH",
+    "requiresManualReview": true,
+    "notes": [
+      "Breaking changes expected in both xlsx and vite upgrades",
+      "Full test suite must pass after updates",
+      "Extension must be tested with real PDFs after upgrade",
+      "Review xlsx API documentation for changes",
+      "Review vite configuration for v7 breaking changes"
+    ]
+  }
+}

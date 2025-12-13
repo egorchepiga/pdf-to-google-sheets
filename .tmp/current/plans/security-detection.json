@@ -1,0 +1,42 @@
+{
+  "workflow": "vulnerability-management",
+  "phase": "detection",
+  "phaseNumber": 1,
+  "config": {
+    "categories": [
+      "type-errors",
+      "runtime-errors",
+      "security",
+      "performance",
+      "dead-code",
+      "devulnerability-code"
+    ],
+    "maxSecuritysPerRun": 1000,
+    "projectType": "chrome-extension",
+    "validationCommands": {
+      "typeCheck": "npx tsc --noEmit",
+      "build": "npm run build",
+      "tests": "npm test"
+    }
+  },
+  "validation": {
+    "required": ["report-exists", "build"],
+    "optional": ["tests"],
+    "notes": "No dedicated type-check script - using 'npx tsc --noEmit' and 'npm run build' for validation"
+  },
+  "nextAgent": "security-scanner",
+  "timestamp": "2025-12-13T00:00:00.000Z",
+  "metadata": {
+    "createdBy": "security-orchestrator",
+    "iteration": 1,
+    "maxIterations": 3,
+    "projectContext": {
+      "name": "pdf-to-sheet-extension",
+      "type": "chrome-extension-mv3",
+      "buildTool": "vite",
+      "testFramework": "jest",
+      "hasTypeScript": true,
+      "hasDedicatedTypeCheck": false
+    }
+  }
+}

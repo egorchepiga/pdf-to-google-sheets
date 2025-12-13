@@ -1,23 +1,70 @@
 // Service Worker for PDF to Sheet Extension (Manifest V3)
 
+// Development mode check (replaced at build time)
+const isDev = import.meta.env.DEV;
+
+// Utility function for conditional error logging
+function logError(context: string, error: unknown) {
+  if (isDev) {
+    console.error(`[DEV] ${context}:`, error);
+  }
+  // In production, errors are only returned to user in sanitized form
+}
+
 // Message handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Service Worker received message:', message.action);
+  // Validate sender origin
+  if (!sender.id || sender.id !== chrome.runtime.id) {
+    sendResponse({ success: false, error: 'Invalid sender' });
+    return;
+  }
+
+  // Validate message structure
+  if (!message || typeof message.action !== 'string') {
+    sendResponse({ success: false, error: 'Invalid message format' });
+    return;
+  }
 
   switch (message.action) {
     case 'processPdf':
+      // Validate data type
+      if (typeof message.data !== 'string' || !message.data) {
+        sendResponse({ success: false, error: 'Invalid PDF data' });
+        return;
+      }
       handleProcessPdf(message.data).then(sendResponse);
       return true; // Indicates async response
 
     case 'exportToSheets':
+      // Validate data structure
+      if (!message.data ||
+          typeof message.data.title !== 'string' ||
+          !Array.isArray(message.data.tables)) {
+        sendResponse({ success: false, error: 'Invalid export data' });
+        return;
+      }
       handleExportToSheets(message.data).then(sendResponse);
       return true;
 
     case 'exportToExcel':
+      // Validate data structure
+      if (!message.data ||
+          typeof message.data.filename !== 'string' ||
+          !Array.isArray(message.data.tables)) {
+        sendResponse({ success: false, error: 'Invalid export data' });
+        return;
+      }
       handleExportToExcel(message.data).then(sendResponse);
       return true;
 
     case 'exportToCsv':
+      // Validate data structure
+      if (!message.data ||
+          typeof message.data.filename !== 'string' ||
+          !Array.isArray(message.data.tables)) {
+        sendResponse({ success: false, error: 'Invalid export data' });
+        return;
+      }
       handleExportToCsv(message.data).then(sendResponse);
       return true;
 
@@ -31,8 +78,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleProcessPdf(base64Data: string) {
   try {
-    console.log(`Service Worker received base64 data: ${base64Data.length} chars`);
-
     if (!base64Data || base64Data.length === 0) {
       return {
         success: false,
@@ -52,10 +97,10 @@ async function handleProcessPdf(base64Data: string) {
 
     return response;
   } catch (error) {
-    console.error('PDF processing error:', error);
+    logError('PDF processing error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'PDF processing failed'
+      error: 'Unable to process PDF. Please try a different file.'
     };
   }
 }
@@ -65,31 +110,21 @@ async function handleProcessPdf(base64Data: string) {
  */
 async function handleExportToSheets(data: { title: string; tables: string[][] }) {
   try {
-    console.log('Starting Google Sheets export...');
-
     // Get OAuth token
     const token = await getAuthToken();
-    console.log('OAuth token obtained');
 
     // Get or create folder in Drive
     const folderId = await getOrCreateFolder(token, 'PDF to Sheet Converter');
-    console.log('Folder ID:', folderId);
 
     // Create spreadsheet in folder
     const url = await createGoogleSheet(token, data.title, data.tables, folderId);
-    console.log('Spreadsheet created:', url);
 
     return { success: true, url };
   } catch (error) {
-    console.error('Sheets export error:', error);
-    // Log detailed error info
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
+    logError('Sheets export error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Export to Sheets failed'
+      error: 'Unable to export to Google Sheets. Please check your Google account permissions and try again.'
     };
   }
 }
@@ -123,10 +158,10 @@ async function handleExportToExcel(data: { filename: string; tables: string[][] 
 
     return response;
   } catch (error) {
-    console.error('Excel export error:', error);
+    logError('Excel export error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Excel export failed'
+      error: 'Unable to export to Excel. Please try again.'
     };
   }
 }
@@ -151,10 +186,10 @@ async function handleExportToCsv(data: { filename: string; tables: string[][] })
 
     return { success: true };
   } catch (error) {
-    console.error('CSV export error:', error);
+    logError('CSV export error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'CSV export failed'
+      error: 'Unable to export to CSV. Please try again.'
     };
   }
 }
@@ -178,8 +213,6 @@ async function ensureOffscreenDocument() {
     reasons: ['DOM_PARSER', 'WORKERS'] as chrome.offscreen.Reason[],
     justification: 'PDF parsing and Excel generation require DOM access'
   });
-
-  console.log('Offscreen document created');
 }
 
 /**
@@ -187,11 +220,15 @@ async function ensureOffscreenDocument() {
  */
 async function getAuthToken(): Promise<string> {
   return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
+    chrome.identity.getAuthToken({ interactive: true }, (result) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
-      } else if (token) {
-        resolve(token);
+      } else if (result && typeof result === 'string') {
+        // Legacy callback signature (string)
+        resolve(result);
+      } else if (result && typeof result === 'object' && 'token' in result && result.token) {
+        // New callback signature (GetAuthTokenResult)
+        resolve(result.token);
       } else {
         reject(new Error('No token received'));
       }
@@ -203,9 +240,16 @@ async function getAuthToken(): Promise<string> {
  * Get or create folder in Google Drive
  */
 async function getOrCreateFolder(token: string, folderName: string): Promise<string> {
+  // Escape single quotes in folderName to prevent injection
+  const escapedName = folderName.replace(/'/g, "\\'");
+
+  // Build query with escaped folder name
+  const query = `name='${escapedName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const params = new URLSearchParams({ q: query });
+
   // Search for existing folder
   const searchResponse = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${token}`
@@ -288,7 +332,7 @@ async function createGoogleSheet(
     );
 
     if (!moveResponse.ok) {
-      console.warn('Failed to move spreadsheet to folder:', moveResponse.statusText);
+      logError('Failed to move spreadsheet to folder', moveResponse.statusText);
       // Don't throw - spreadsheet is created, just not in folder
     }
   }
@@ -330,5 +374,3 @@ function generateCSV(data: string[][]): string {
   const rows = data.map((row) => row.map(escapeValue).join(','));
   return BOM + rows.join('\n');
 }
-
-console.log('Service Worker initialized');

@@ -2,8 +2,6 @@
 
 // Message handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Service Worker received message:', message.action);
-
   switch (message.action) {
     case 'processPdf':
       handleProcessPdf(message.data).then(sendResponse);
@@ -31,8 +29,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleProcessPdf(base64Data: string) {
   try {
-    console.log(`Service Worker received base64 data: ${base64Data.length} chars`);
-
     if (!base64Data || base64Data.length === 0) {
       return {
         success: false,
@@ -65,28 +61,18 @@ async function handleProcessPdf(base64Data: string) {
  */
 async function handleExportToSheets(data: { title: string; tables: string[][] }) {
   try {
-    console.log('Starting Google Sheets export...');
-
     // Get OAuth token
     const token = await getAuthToken();
-    console.log('OAuth token obtained');
 
     // Get or create folder in Drive
     const folderId = await getOrCreateFolder(token, 'PDF to Sheet Converter');
-    console.log('Folder ID:', folderId);
 
     // Create spreadsheet in folder
     const url = await createGoogleSheet(token, data.title, data.tables, folderId);
-    console.log('Spreadsheet created:', url);
 
     return { success: true, url };
   } catch (error) {
     console.error('Sheets export error:', error);
-    // Log detailed error info
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Export to Sheets failed'
@@ -178,8 +164,6 @@ async function ensureOffscreenDocument() {
     reasons: ['DOM_PARSER', 'WORKERS'] as chrome.offscreen.Reason[],
     justification: 'PDF parsing and Excel generation require DOM access'
   });
-
-  console.log('Offscreen document created');
 }
 
 /**
@@ -187,11 +171,15 @@ async function ensureOffscreenDocument() {
  */
 async function getAuthToken(): Promise<string> {
   return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
+    chrome.identity.getAuthToken({ interactive: true }, (result) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
-      } else if (token) {
-        resolve(token);
+      } else if (result && typeof result === 'string') {
+        // Legacy callback signature (string)
+        resolve(result);
+      } else if (result && typeof result === 'object' && 'token' in result && result.token) {
+        // New callback signature (GetAuthTokenResult)
+        resolve(result.token);
       } else {
         reject(new Error('No token received'));
       }
@@ -203,9 +191,16 @@ async function getAuthToken(): Promise<string> {
  * Get or create folder in Google Drive
  */
 async function getOrCreateFolder(token: string, folderName: string): Promise<string> {
+  // Escape single quotes in folderName to prevent injection
+  const escapedName = folderName.replace(/'/g, "\\'");
+
+  // Build query with escaped folder name
+  const query = `name='${escapedName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const params = new URLSearchParams({ q: query });
+
   // Search for existing folder
   const searchResponse = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${token}`
@@ -330,21 +325,3 @@ function generateCSV(data: string[][]): string {
   const rows = data.map((row) => row.map(escapeValue).join(','));
   return BOM + rows.join('\n');
 }
-
-/**
- * Download blob as file
- */
-async function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-
-  await chrome.downloads.download({
-    url,
-    filename,
-    saveAs: true
-  });
-
-  // Clean up
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
-
-console.log('Service Worker initialized');

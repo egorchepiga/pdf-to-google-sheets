@@ -1,28 +1,48 @@
 {
-  "phase": "bug-fixing",
-  "priority": "high",
-  "timestamp": "2025-12-12T09:30:00.000Z",
+  "phase": "bug-fixing-low",
+  "timestamp": "2025-12-12T10:30:00.000Z",
   "files_modified": [
+    {
+      "path": "src/popup/popup.ts",
+      "backup": ".tmp/current/backups/.rollback/src-popup-popup.ts.backup",
+      "timestamp": "2025-12-12T10:35:00.000Z",
+      "bug_id": "LOW-12",
+      "reason": "Remove debug console.log statements (3 occurrences)"
+    },
     {
       "path": "src/offscreen/offscreen.ts",
       "backup": ".tmp/current/backups/.rollback/src-offscreen-offscreen.ts.backup",
-      "timestamp": "2025-12-12T09:35:00.000Z",
-      "bug_id": "HIGH-1",
-      "reason": "Remove duplicate extractTable() function, use library import instead"
+      "timestamp": "2025-12-12T10:36:00.000Z",
+      "bug_id": "LOW-12",
+      "reason": "Remove debug console.log statements (5 occurrences)"
     },
     {
       "path": "src/background/service-worker.ts",
       "backup": ".tmp/current/backups/.rollback/src-background-service-worker.ts.backup",
-      "timestamp": "2025-12-12T09:36:00.000Z",
-      "bug_id": "HIGH-2",
-      "reason": "Delete unused downloadBlob() function that cannot work in MV3 Service Workers"
+      "timestamp": "2025-12-12T10:37:00.000Z",
+      "bug_id": "LOW-12",
+      "reason": "Remove debug console.log statements (6 occurrences), keep error logs"
     },
     {
       "path": "src/lib/table-extractor.ts",
       "backup": ".tmp/current/backups/.rollback/src-lib-table-extractor.ts.backup",
-      "timestamp": "2025-12-12T09:37:00.000Z",
-      "bug_id": "HIGH-3",
-      "reason": "Remove unused exported functions normalizeTableData and validateTableData"
+      "timestamp": "2025-12-12T10:40:00.000Z",
+      "bug_id": "LOW-13",
+      "reason": "Add better documentation for magic number constants"
+    },
+    {
+      "path": "src/popup/popup.ts",
+      "backup": ".tmp/current/backups/.rollback/src-popup-popup.ts-v2.backup",
+      "timestamp": "2025-12-12T10:45:00.000Z",
+      "bug_id": "LOW-14",
+      "reason": "Add documentation for event listener lifecycle management"
+    },
+    {
+      "path": "src/popup/popup.html",
+      "backup": ".tmp/current/backups/.rollback/src-popup-popup.html.backup",
+      "timestamp": "2025-12-12T10:50:00.000Z",
+      "bug_id": "LOW-15",
+      "reason": "Remove Settings/History buttons (features not implemented)"
     }
   ],
   "files_created": []

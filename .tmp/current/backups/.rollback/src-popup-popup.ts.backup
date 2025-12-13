@@ -1,17 +1,6 @@
 // Popup UI Logic
 type Section = 'upload' | 'processing' | 'preview' | 'success' | 'error';
 
-/**
- * PopupUI Class
- *
- * Event Listener Lifecycle:
- * - Event listeners are added in init() during popup creation
- * - No cleanup needed: Chrome Extension popups are short-lived and destroyed when closed
- * - Each popup open creates a fresh instance with new event listeners
- * - Automatic cleanup on popup close by browser (no memory leaks)
- *
- * Note: If popup becomes long-lived (persistent), implement cleanup in a destructor
- */
 class PopupUI {
   private currentSection: Section = 'upload';
   private currentFile: File | null = null;
@@ -99,8 +88,11 @@ class PopupUI {
         throw new Error('The PDF file is empty, i.e. its size is zero bytes.');
       }
 
+      console.log(`Reading PDF file: ${file.name}, size: ${file.size} bytes`);
+
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
+      console.log(`ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
 
       if (arrayBuffer.byteLength === 0) {
         throw new Error('Failed to read PDF file. Please try again.');
@@ -110,6 +102,7 @@ class PopupUI {
 
       // Convert to base64 to avoid ArrayBuffer serialization issues in MV3
       const base64 = this.arrayBufferToBase64(arrayBuffer);
+      console.log(`Base64 size: ${base64.length} chars`);
 
       // Send to background for processing
       const response = await chrome.runtime.sendMessage({

@@ -2,24 +2,59 @@
 // This runs in a hidden document with DOM access (required for PDF.js and canvas)
 
 import * as pdfjsLib from 'pdfjs-dist';
+import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 import * as XLSX from 'xlsx';
 import { extractTable } from '../lib/table-extractor';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.js');
 
+// Development mode check (replaced at build time)
+const isDev = import.meta.env.DEV;
+
+// Utility function for conditional error logging
+function logError(context: string, error: unknown) {
+  if (isDev) {
+    console.error(`[DEV] ${context}:`, error);
+  }
+  // In production, errors are only returned to user in sanitized form
+}
+
 // Listen for messages from Service Worker
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Validate sender origin
+  if (!sender.id || sender.id !== chrome.runtime.id) {
+    sendResponse({ success: false, error: 'Invalid sender' });
+    return;
+  }
+
+  // Only process messages targeted to offscreen
   if (message.target !== 'offscreen') return;
 
-  console.log('Offscreen received:', message.action);
+  // Validate message structure
+  if (!message || typeof message.action !== 'string') {
+    sendResponse({ success: false, error: 'Invalid message format' });
+    return;
+  }
 
   switch (message.action) {
     case 'parsePdf':
+      // Validate data type
+      if (typeof message.data !== 'string' || !message.data) {
+        sendResponse({ success: false, error: 'Invalid PDF data' });
+        return;
+      }
       handleParsePdf(message.data).then(sendResponse);
       return true;
 
     case 'generateExcel':
+      // Validate data structure
+      if (!message.data ||
+          typeof message.data.filename !== 'string' ||
+          !Array.isArray(message.data.tables)) {
+        sendResponse({ success: false, error: 'Invalid export data' });
+        return;
+      }
       handleGenerateExcel(message.data).then(sendResponse);
       return true;
 
@@ -33,8 +68,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleParsePdf(base64Data: string) {
   try {
-    console.log(`Offscreen received base64 data: ${base64Data.length} chars`);
-
     if (!base64Data || base64Data.length === 0) {
       return {
         success: false,
@@ -49,14 +82,10 @@ async function handleParsePdf(base64Data: string) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`Converted to Uint8Array: ${bytes.length} bytes`);
-
     // Load PDF document
     const pdf = await pdfjsLib.getDocument({
       data: bytes
     }).promise;
-
-    console.log(`PDF loaded: ${pdf.numPages} pages`);
 
     // Extract tables from all pages
     const allTables: string[][] = [];
@@ -67,13 +96,23 @@ async function handleParsePdf(base64Data: string) {
       const viewport = page.getViewport({ scale: 1 });
 
       // Extract text items with coordinates
-      const items = textContent.items.map((item: any) => ({
-        text: item.str,
-        x: item.transform[4],
-        y: viewport.height - item.transform[5],
-        width: item.width,
-        height: item.transform[0]
-      }));
+      type ExtractedItem = {
+        text: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      };
+
+      const items: ExtractedItem[] = textContent.items
+        .filter((item): item is TextItem => 'str' in item)
+        .map((item) => ({
+          text: item.str,
+          x: item.transform[4],
+          y: viewport.height - item.transform[5],
+          width: item.width,
+          height: item.transform[0]
+        }));
 
       // Extract table from text items
       const table = extractTable(items);
@@ -95,10 +134,10 @@ async function handleParsePdf(base64Data: string) {
       tables: allTables
     };
   } catch (error) {
-    console.error('PDF parsing error:', error);
+    logError('PDF parsing error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'PDF parsing failed'
+      error: 'Unable to parse PDF. The file may be corrupted or contain unsupported content.'
     };
   }
 }
@@ -143,12 +182,10 @@ async function handleGenerateExcel(data: { filename: string; tables: string[][] 
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     };
   } catch (error) {
-    console.error('Excel generation error:', error);
+    logError('Excel generation error', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Excel generation failed'
+      error: 'Unable to generate Excel file. Please try again.'
     };
   }
 }
-
-console.log('Offscreen document initialized');
